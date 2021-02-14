@@ -74,6 +74,7 @@ namespace DbDemo1
 					FROM  dbo.Person p
 						INNER JOIN cte
 						on p.ID = cte.minID
+						ORDER BY p.FullName
 				";
 
 			using IDbConnection connection = new SqlConnection(_conStr);
