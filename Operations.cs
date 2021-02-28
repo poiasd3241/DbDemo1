@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Diagnostics;
-using System.Text;
 using static System.Console;
 
 namespace DbDemo1
@@ -12,20 +10,20 @@ namespace DbDemo1
 		#region Private Members
 
 		private readonly SqlServerOperations _sqlServerOperations;
-		private readonly Random _rnd = new();
-		private readonly List<char> _alphabetLowercase = new() { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', };
-		private readonly DateTime _oldestDateOfBirth = new(1921, 1, 1);
-		private readonly DateTime _newestDateOfBirth = new(2011, 1, 1);
-		private readonly int _daysBetweenOldestAndNewestDate;
+		private readonly OperationsHelpers _helpers;
 
 		#endregion
 
 		#region Constructor
 
+		/// <summary>
+		/// Default constructor.
+		/// </summary>
+		/// <param name="conStr">The connecting string to use.</param>
 		public Operations(string conStr)
 		{
-			_sqlServerOperations = new SqlServerOperations(conStr);
-			_daysBetweenOldestAndNewestDate = (_newestDateOfBirth - _oldestDateOfBirth).Days;
+			_sqlServerOperations = new(conStr);
+			_helpers = new();
 		}
 
 		#endregion
@@ -54,7 +52,8 @@ namespace DbDemo1
 				(input) =>
 				{
 					return DateTime.TryParse(input, out DateTime dateOfBirth) &&
-					   dateOfBirth >= _oldestDateOfBirth && dateOfBirth <= _newestDateOfBirth;
+					   dateOfBirth >= _helpers.OldestDateOfBirth &&
+					   dateOfBirth <= _helpers.NewestDateOfBirth;
 				},
 				(input) => DateTime.Parse(input));
 
@@ -109,8 +108,8 @@ namespace DbDemo1
 		{
 			TryBase(() =>
 			{
-				_sqlServerOperations.CreateRandomEntries(GetRandomEntries(1000000));
-				_sqlServerOperations.CreateRandomEntries(GetRandomEntries(100, fullNameFirstLetter: 'F', sex: 'M'));
+				_sqlServerOperations.CreateRandomEntries(_helpers.GetRandomEntries(1000000));
+				_sqlServerOperations.CreateRandomEntries(_helpers.GetRandomEntries(100, fullNameFirstLetter: 'F', sex: 'M'));
 
 				WriteLine($"Create random entries: SUCCESS.");
 			}, "Get unique entries");
@@ -248,141 +247,8 @@ namespace DbDemo1
 				WriteLine($"Full name    : {people[i].FullName}");
 				WriteLine($"Date of birth: {people[i].DateOfBirth:yyyy'-'MM'-'dd}");
 				WriteLine($"Sex          : {people[i].Sex}");
-				WriteLine($"Age          : {people[i].Age}");
+				WriteLine($"Age          : {people[i].GetAge()}");
 			}
-		}
-
-		#endregion
-
-		#region Private Helpers
-
-		// No documentation due to lack of time );
-
-		private Person[] GetRandomEntries(int amount)
-		{
-			var result = new Person[amount];
-
-			for (int i = 0; i < amount; i++)
-			{
-				result[i] = GetRandomPerson();
-			}
-
-			return result;
-		}
-
-		private Person[] GetRandomEntries(int amount, char fullNameFirstLetter, char sex)
-		{
-			var result = new Person[amount];
-
-			for (int i = 0; i < amount; i++)
-			{
-				result[i] = GetRandomPerson(fullNameFirstLetter, sex);
-			}
-
-			return result;
-		}
-
-		private Person GetRandomPerson()
-		{
-			return new Person()
-			{
-				FullName = GetRandomFullName(100),
-				DateOfBirth = GetRandomDateOfBirth(),
-				Sex = _rnd.Next(0, 2) == 0 ? 'M' : 'F'
-			};
-		}
-
-		private Person GetRandomPerson(char fullNameFirstLetter, char sex)
-		{
-			return new Person()
-			{
-				FullName = GetRandomFullName(100, fullNameFirstLetter),
-				DateOfBirth = GetRandomDateOfBirth(),
-				Sex = sex
-			};
-		}
-
-		private string GetRandomFullName(int maxLength)
-		{
-			StringBuilder sb = new();
-
-			// Generate a full name consisting of 3 parts.
-
-			// First part leaves 2 spaces and 5+5 minimum for 2nd and 3rd parts.
-			var firstPartLength = _rnd.Next(5, maxLength - 12 + 1);
-			// Second part leaves 2 spaces and 5 minimum for 3rd part.
-			var secondPartLength = _rnd.Next(5, maxLength - firstPartLength - 7 + 1);
-			var thirdPartLength = _rnd.Next(5, maxLength - firstPartLength - secondPartLength - 2);
-
-			AddNamePart(ref sb, firstPartLength);
-			sb.Append(' ');
-			AddNamePart(ref sb, secondPartLength);
-			sb.Append(' ');
-			AddNamePart(ref sb, thirdPartLength);
-
-			return sb.ToString();
-		}
-		private string GetRandomFullName(int maxLength, char fullNameFirstLetter)
-		{
-			StringBuilder sb = new();
-
-			// Generate a full name consisting of 3 parts.
-
-			// First part leaves 2 spaces and 5+5 minimum for 2nd and 3rd parts.
-			var firstPartLength = _rnd.Next(5, maxLength - 12 + 1);
-			// Second part leaves 2 spaces and 5 minimum for 3rd part.
-			var secondPartLength = _rnd.Next(5, maxLength - firstPartLength - 7 + 1);
-			var thirdPartLength = _rnd.Next(5, maxLength - firstPartLength - secondPartLength - 2);
-
-			AddNamePart(ref sb, firstPartLength, fullNameFirstLetter);
-			sb.Append(' ');
-			AddNamePart(ref sb, secondPartLength);
-			sb.Append(' ');
-			AddNamePart(ref sb, thirdPartLength);
-
-			return sb.ToString();
-		}
-
-		private void AddNamePart(ref StringBuilder sb, int namePartLength)
-		{
-			char current;
-
-			for (int i = 0; i < namePartLength; i++)
-			{
-				current = _alphabetLowercase[_rnd.Next(0, _alphabetLowercase.Count)];
-
-				if (i == 0)
-				{
-					current = char.ToUpper(current);
-				}
-
-				sb.Append(current);
-			}
-		}
-
-		private void AddNamePart(ref StringBuilder sb, int namePartLength, char firstLetter)
-		{
-			char current;
-
-			for (int i = 0; i < namePartLength; i++)
-			{
-
-				if (i == 0)
-				{
-					current = char.ToUpper(firstLetter);
-				}
-				else
-				{
-					current = _alphabetLowercase[_rnd.Next(0, _alphabetLowercase.Count)];
-				}
-
-				sb.Append(current);
-			}
-		}
-
-		private DateTime GetRandomDateOfBirth()
-		{
-			return _oldestDateOfBirth.AddDays(_rnd.Next(_daysBetweenOldestAndNewestDate + 1));
 		}
 
 		#endregion

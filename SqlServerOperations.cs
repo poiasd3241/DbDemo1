@@ -15,6 +15,10 @@ namespace DbDemo1
 
 		#region Constructor
 
+		/// <summary>
+		/// Default constructor.
+		/// </summary>
+		/// <param name="conStr">The connecting string to use.</param>
 		public SqlServerOperations(string conStr)
 		{
 			_conStr = conStr;
@@ -122,7 +126,7 @@ namespace DbDemo1
 		/// </summary>
 		public void IndexFullNameAndSexColumns()
 		{
-			// From MS docs: A SQL Server index is an on-disk or in-memory structure
+			// SQL Server index is an on-disk or in-memory structure
 			// associated with a table or view that speeds retrieval of rows from the table or view.
 
 			// Personal test: 1000 consequent GetMaleAndFullNameSpecificEntries calls
